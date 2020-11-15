@@ -1,0 +1,750 @@
+---
+title: "Survey of Business Owners"
+author: "By Alex Ackerman, Rudy Duran, and Daniel Soria"
+output:
+  revealjs::revealjs_presentation:
+    center: true
+    theme: night
+    highlight: haddock
+    transition: concave
+---
+<style type="text/css">
+  .reveal p {
+    text-align: left;
+  }
+  .reveal ul {
+    display: block;
+  }
+  .reveal ol {
+    display: block;
+    
+  }  
+  .reveal section img {
+  background:none; 
+  border:none; 
+  box-shadow:none; 
+  }
+  Reveal.initialize({
+
+	controls: true,
+	controlsBackArrows: 'visible'
+})
+
+  
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(extrafont)
+library(waffle)
+library(highcharter)
+library(treemap)
+library(treemapify)
+library(png)
+library(dendextend)
+library(d3heatmap)
+
+
+pums = read_csv("C:\\Users\\duran\\Downloads\\pums.csv",
+                na = "NA")
+head(pums)
+lapply(pums, class)
+
+
+EDUC_H <- filter(pums, PCT1 == 100, EDUC1 %in% c(1,2,3,4,5,6,7), RACE1 %in% c("W","B","I","A","P","S"), ETH1 %in% c("H"))
+EDUC_WW <- filter(pums, PCT1 == 100, EDUC1 %in% c(1,2,3,4,5,6,7), RACE1 %in% c("W"), ETH1 %in% c("N"))
+EDUC_A <- filter(pums, PCT1 == 100, EDUC1 %in% c(1,2,3,4,5,6,7), RACE1 %in% c("A"), ETH1 %in% c("N"))
+EDUC_B <- filter(pums, PCT1 == 100, EDUC1 %in% c(1,2,3,4,5,6,7), RACE1 %in% c("B"), ETH1 %in% c("N"))
+
+
+
+pums2 = filter(pums, PCT1 == 100, 
+               HOURS1 %in% c(1,2,3,4,5,6), 
+               AGE1 %in% c(1,2,3,4,5,6), 
+               EDUC1 %in% c(1,2,3,4,5,6,7), 
+              SCAMOUNT %in% c(1,2,3,4,5,6,7,8),
+              ACQYR1 %in% c(1:7)
+              )
+
+Owner1 <- filter(pums, PCT1 == 100,
+                 EDUC1 %in% c(1,2,3,4,5,6,7), 
+                 AGE1 %in% c(1,2,3,4,5,6), 
+                 RACE1 %in% c("W","B","I","A","P","S"))
+
+Age1 <- filter(pums, PCT1 == 100,
+                 AGE1 %in% c(1,2,3,4,5,6), 
+                 RACE1 %in% c("W","B","I","A","P","S"))
+
+Percent <- Age1 %>% group_by(AGE1) %>% 
+ summarize(count = n()) %>%  # count records by species
+ mutate(pct = count/sum(count))  # find percent of total
+Percent
+
+ourOwnColorPalette = c("#B40F20", "#E2D200", "#46ACC8", "#ECCBAE","#31a354","#9370DB", "#636363", "#F4B5BD", "#FAD510","#FF0000")
+
+IND_H <- filter(pums, PCT1 == 100, RACE1 %in% c("W","B","I","A","P","S"), ETH1 %in% c("H"))
+IND_WW <- filter(pums, PCT1 == 100, RACE1 %in% c("W"), ETH1 %in% c("N"))
+IND_A <- filter(pums, PCT1 == 100,  RACE1 %in% c("A"), ETH1 %in% c("N"))
+IND_B <- filter(pums, PCT1 == 100, RACE1 %in% c("B"), ETH1 %in% c("N"))
+
+
+
+dataW <- IND_WW %>%
+    select(industryCode = SECTOR)
+
+dataW <- dataW %>%
+      group_by(industryCode) %>%
+        mutate(industryCount = n()) %>%
+      ungroup()
+
+dataW <- distinct(dataW, industryCode, industryCount)
+
+industryNamesList <- c("Agriculture", "Mining", "Utilities", 
+                   "Construction", "Manufacturing",
+                   "Wholesale Trading", "Retail Trade", 
+                   "Transportation & Warehousing",
+                   "Information", 
+                   "Finance & Insurance", "Real Estate",
+                   "Professional, Scientific & Technical Services", "Mgmt of Companies & Enterprises", 
+                   "Admin/Support/Waste Mgmt", "Education Services","Healthcare & Social Assistance",
+                   "Arts & Entertainment", "Accomodation & Food Services", 
+                   "Other Services", "Nonclassifiable Establishments")
+
+industryCodeList <- c(11,21,22,23,31,42,44,48,51,52,53,54,55,56,61,62,71,72,81,99)
+
+d1 <- data.frame(industryNames = industryNamesList,
+                 industryCode = industryCodeList,
+                 stringsAsFactors = FALSE)
+
+
+
+finalDataW <- inner_join(dataW, d1, by = c("industryCode" = "industryCode"))
+
+finalDataW
+
+dataH <- IND_H %>%
+    select(industryCode = SECTOR)
+
+dataH <- dataH %>%
+      group_by(industryCode) %>%
+        mutate(industryCount = n()) %>%
+      ungroup()
+
+dataH <- distinct(dataH, industryCode, industryCount)
+
+industryNamesList <- c("Agriculture", "Mining", "Utilities", 
+                   "Construction", "Manufacturing",
+                   "Wholesale Trading", "Retail Trade", 
+                   "Transportation & Warehousing",
+                   "Information", 
+                   "Finance & Insurance", "Real Estate",
+                   "Professional, Scientific & Technical Services", "Mgmt of Companies & Enterprises", 
+                   "Admin/Support/Waste Mgmt", "Education Services","Healthcare & Social Assistance",
+                   "Arts & Entertainment", "Accomodation & Food Services", 
+                   "Other Services", "Nonclassifiable Establishments")
+
+industryCodeList <- c(11,21,22,23,31,42,44,48,51,52,53,54,55,56,61,62,71,72,81,99)
+
+d1 <- data.frame(industryNames = industryNamesList,
+                 industryCode = industryCodeList,
+                 stringsAsFactors = FALSE)
+
+
+
+finalDataH <- inner_join(dataH, d1, by = c("industryCode" = "industryCode"))
+
+finalDataH
+
+
+dataA <- IND_A %>%
+    select(industryCode = SECTOR)
+
+dataA <- dataA %>%
+      group_by(industryCode) %>%
+        mutate(industryCount = n()) %>%
+      ungroup()
+
+dataA <- distinct(dataA, industryCode, industryCount)
+
+industryNamesList <- c("Agriculture", "Mining", "Utilities", 
+                   "Construction", "Manufacturing",
+                   "Wholesale Trading", "Retail Trade", 
+                   "Transportation & Warehousing",
+                   "Information", 
+                   "Finance & Insurance", "Real Estate",
+                   "Professional, Scientific & Technical Services", "Mgmt of Companies & Enterprises", 
+                   "Admin/Support/Waste Mgmt", "Education Services","Healthcare & Social Assistance",
+                   "Arts & Entertainment", "Accomodation & Food Services", 
+                   "Other Services", "Nonclassifiable Establishments")
+
+industryCodeList <- c(11,21,22,23,31,42,44,48,51,52,53,54,55,56,61,62,71,72,81,99)
+
+d1 <- data.frame(industryNames = industryNamesList,
+                 industryCode = industryCodeList,
+                 stringsAsFactors = FALSE)
+
+
+
+finalDataA <- inner_join(dataA, d1, by = c("industryCode" = "industryCode"))
+
+finalDataA
+
+dataB <- IND_B %>%
+    select(industryCode = SECTOR)
+
+dataB <- dataB %>%
+      group_by(industryCode) %>%
+        mutate(industryCount = n()) %>%
+      ungroup()
+
+dataB <- distinct(dataB, industryCode, industryCount)
+
+industryNamesList <- c("Agriculture", "Mining", "Utilities", 
+                   "Construction", "Manufacturing",
+                   "Wholesale Trading", "Retail Trade", 
+                   "Transportation & Warehousing",
+                   "Information", 
+                   "Finance & Insurance", "Real Estate",
+                   "Professional, Scientific & Technical Services", "Mgmt of Companies & Enterprises", 
+                   "Admin/Support/Waste Mgmt", "Education Services","Healthcare & Social Assistance",
+                   "Arts & Entertainment", "Accomodation & Food Services", 
+                   "Other Services", "Nonclassifiable Establishments")
+
+industryCodeList <- c(11,21,22,23,31,42,44,48,51,52,53,54,55,56,61,62,71,72,81,99)
+
+d1 <- data.frame(industryNames = industryNamesList,
+                 industryCode = industryCodeList,
+                 stringsAsFactors = FALSE)
+
+
+
+
+finalDataB <- inner_join(dataB, d1, by = c("industryCode" = "industryCode"))
+
+finalDataB
+
+
+
+lapply(pums2,class)
+complete.cases(pums2)
+pums2_clean <- na.omit(pums2)
+complete.cases(pums2_clean)
+
+Percent <- Age1 %>% group_by(AGE1) %>% 
+ summarize(count = n()) %>%  # count records by species
+ mutate(pct = count/sum(count))  # find percent of total
+Percent
+
+
+educpercent <- EDUC_WW %>% 
+              group_by(EDUC1) %>% 
+              summarize(count = n()) %>% 
+              mutate(percent = count/sum(count))
+print(educpercent)
+
+educhpct <- EDUC_H %>% 
+            group_by(EDUC1) %>% 
+            summarize(count = n()) %>% 
+          mutate(pct = count/sum(count))
+educhpct
+
+educapercent <- EDUC_A %>% 
+                group_by(EDUC1) %>% 
+                summarize(count = n()) %>% 
+                mutate(pct = count/sum(count))
+educapercent
+
+educbpercent <- EDUC_B %>% 
+                group_by(EDUC1) %>% 
+                summarize(count = n()) %>% 
+                mutate(pct = count/sum(count))
+educbpercent
+
+
+
+Total <- pums2_clean %>% 
+        group_by(ACQYR1) %>% 
+        mutate(totalcount = n()) %>% 
+        select(ACQYR1, SEX1, totalcount)
+print(Total)
+
+PercentageSexM <- Total %>% 
+                group_by(ACQYR1) %>% 
+                filter(SEX1 == "M") %>% 
+                mutate(malecount = n()) %>% 
+                select(ACQYR1, SEX1, totalcount, malecount) %>% 
+                distinct(totalcount, malecount)
+print(PercentageSexM)
+
+PercentageSexF <- Total %>% 
+                group_by(ACQYR1) %>% 
+                filter(SEX1 == "F") %>% 
+                mutate(femalecount = n()) %>% 
+                select(ACQYR1, SEX1, totalcount, femalecount) %>% 
+                distinct(totalcount, femalecount)
+print(PercentageSexF)
+
+LineM <- PercentageSexM %>% 
+        group_by(ACQYR1) %>% 
+        mutate(Male_Percentage = malecount/ totalcount) %>% 
+        arrange(ACQYR1)
+print(LineM)
+
+LineF <- PercentageSexF %>% 
+        group_by(ACQYR1) %>% 
+        mutate(Female_Percentage = femalecount/ totalcount)  %>% 
+        arrange(ACQYR1)
+print(LineF)
+
+StartupH <- filter(pums, PCT1 == 100, RACE1 %in% c("W","B","I","A","P","S"), ETH1 %in% c("H"), SCAMOUNT %in% c(1,2,3,4,5,6,7,8))
+StartupW <- filter(pums, PCT1 == 100, RACE1 %in% c("W"), ETH1 %in% c("N") , SCAMOUNT %in% c(1,2,3,4,5,6,7,8))
+
+owner1 <- pums %>% filter(PCT1 == 100)
+
+
+
+dataAge <- owner1 %>%
+    select(age = AGE1, industryCode = SECTOR)
+
+dataAge1 <- dataAge %>%
+      group_by(age, industryCode) %>%
+        mutate(age1Count = n()) %>%
+      ungroup()
+
+cleanedDataAge1 <- distinct(dataAge1, age, industryCode, age1Count)
+
+
+cleanAge0 <- subset(x = cleanedDataAge1, 
+       subset = age == 0)
+cleanAge0 <- rename(cleanAge0, age0Count = age1Count)
+finalCleanAge0 = subset(cleanAge0, select = -c(age))
+
+cleanAge1 <- subset(x = cleanedDataAge1, 
+       subset = age == 1)
+cleanAge1 <- rename(cleanAge1)
+finalCleanAge1 = subset(cleanAge1, select = -c(age))
+
+cleanAge2 <- subset(x = cleanedDataAge1, 
+       subset = age == 2)
+cleanAge2 <- rename(cleanAge2, age2Count = age1Count)
+finalCleanAge2 = subset(cleanAge2, select = -c(age))
+
+cleanAge3 <- subset(x = cleanedDataAge1, 
+       subset = age == 3)
+cleanAge3 <- rename(cleanAge3, age3Count = age1Count)
+finalCleanAge3 = subset(cleanAge3, select = -c(age))
+
+cleanAge4 <- subset(x = cleanedDataAge1, 
+       subset = age == 4)
+cleanAge4 <- rename(cleanAge4, age4Count = age1Count)
+finalCleanAge4 = subset(cleanAge4, select = -c(age))
+
+cleanAge5 <- subset(x = cleanedDataAge1, 
+       subset = age == 5)
+cleanAge5 <- rename(cleanAge5, age5Count = age1Count)
+finalCleanAge5 = subset(cleanAge5, select = -c(age))
+
+cleanAge6 <- subset(x = cleanedDataAge1, 
+       subset = age == 6)
+cleanAge6 <- rename(cleanAge6, age6Count = age1Count)
+finalCleanAge6 = subset(cleanAge6, select = -c(age))
+
+
+combinedData <- inner_join(finalCleanAge0, finalCleanAge1, by = c("industryCode" = "industryCode"))
+combinedData <- inner_join(combinedData, finalCleanAge2, by = c("industryCode" = "industryCode"))
+combinedData <- inner_join(combinedData, finalCleanAge3, by = c("industryCode" = "industryCode"))
+combinedData <- inner_join(combinedData, finalCleanAge4, by = c("industryCode" = "industryCode"))
+combinedData <- inner_join(combinedData, finalCleanAge5, by = c("industryCode" = "industryCode"))
+combinedData <- inner_join(combinedData, finalCleanAge6, by = c("industryCode" = "industryCode"))
+combinedData <- arrange(combinedData, industryCode)
+
+
+industryNamesList <- c("Agriculture", "Mining", "Utilities",
+                  "Construction", "Manufacturing",
+                  "Wholesale Trading", "Retail Trade",
+                  "Transportation & Warehousing",
+                  "Information",
+                  "Finance & Insurance", "Real Estate",
+                  "Professional, Scientific & Technical Services", "Mgmt of Companies & Enterprises",
+                  "Admin/Support/Waste Mgmt", "Education Services","Healthcare & Social Assistance",
+                  "Arts & Entertainment", "Accomodation & Food Services",
+                  "Other Services", "Nonclassifiable Establishments")
+
+d1 <- data.frame(industryNames = industryNamesList,
+                 industryCode = combinedData$industryCode,
+                 stringsAsFactors = FALSE)
+
+
+combinedData1 <- inner_join(combinedData, d1, by = c("industryCode" = "industryCode"))
+combinedData1 <- column_to_rownames(combinedData1, var = "industryNames")
+finalCombined = subset(combinedData1, select = -c(industryCode))
+finalCombined <- rename(finalCombined, `Not Reported` = age0Count, `Under 25` = age1Count, `25 - 34` = age2Count, 
+                        `35 - 44` = age3Count, `45 - 54` = age4Count, `55 - 64` = age5Count, `65 or over` = age6Count)
+
+
+Parts <- c(`Black: 8.2%`= 103 , `Asian: 7.2%` = 90, `Native American: 0.9%`= 11 , `Pacific Islander: 0.2%` = 2, `Other Race: 0.2%`= 3 , `White: 83%` = 1045)
+waffle(Parts, rows= 22, size = .5,legend_pos = "bottom", colors=c("#B40F20", "#E2D200", "#46ACC8", "#ECCBAE","#31a354","#9370DB")) +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'))
+
+Parts <- c(`Black: 7.7%`= 97 , `Asian: 7.0%` = 89, `Native American: 0.7%`= 9 , `Pacific Islander: 0.2%` = 2, `Other Race: 0.2%`= 2 , `White (Non-Hispanic): 75.1%` = 942, `Hispanic: 9.0%`= 113)
+waffle(Parts, rows= 22, size = .5,legend_pos = "bottom", colors=c("#B40F20", "#E2D200", "#46ACC8", "#ECCBAE","#31a354","#9370DB", "#636363")) +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'))
+
+
+```
+
+<section>
+<h1 style = "font-size: 150%;">Background</h1>
+<body>
+- Conducted by US Census
+<img src="C:\Users\duran\Pictures\US Census logo.jpg" alt="Analysis" width="400" height="400" align="right">
+- 82 Question Survey
+- Economic and demographic data
+- 2007 data 
+- Focus is on single business owners
+</body>
+</section>
+  
+
+<section>
+<h1 style = "font-size: 150%;">Data Analysis Overview</h1>
+- Age
+<img src="C:\Users\duran\Pictures\Data Analysis.png" alt="Analysis" width="400" height="400" align="right">
+- Hours Worked
+- Gender
+- Race
+- Education
+- Industry
+- Geography
+</section>
+
+<section data-background-image="C:\Users\duran\Pictures\rick and morty gif.gif">
+</section>
+
+<section data-markdown class="center">
+<h1 style = "font-size: 150%;">Age of Business Owners</h1>
+<body>    
+```{r echo = FALSE}
+ggplot(Percent, aes(AGE1, pct, fill = factor(AGE1))) +
+ geom_bar(stat = "identity") +
+  labs(x="Age",
+      y="Percent",
+      title= "Age of Small Business Owners") +
+  geom_text(aes(label = scales::percent(pct)), vjust = -0.3, color = "white") +
+scale_x_continuous(breaks = c(1,2,3,4,5,6)) +
+ scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  scale_fill_manual(values = ourOwnColorPalette,name="Age Range", labels= c("Under 25", "25 - 34" , "35 - 44", "45 - 54", "55 - 64", "65 or Over")) +
+  theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_line(colour = 'white'),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+```
+</body>
+</section>
+
+<section>
+<h1 style = "font-size: 150%;">Ages and Hours Worked</h1>
+
+```{r echo = FALSE, include = FALSE}
+hours1pct <- pums2_clean %>% 
+                      group_by(AGE1, HOURS1) %>% 
+                      summarize(count = n()) %>% 
+                    mutate(pct = count/ sum(count))
+                      
+hours1pct
+```
+
+
+<body>
+```{r}
+ggplot(pums2_clean,aes(AGE1,fill = factor(HOURS1))) +
+  geom_bar(position = "dodge", color = "black") +
+  labs(title = "Small Business Owners Divided by Age Group (US,2007)",
+       x = "Age",
+       y = "Count") +
+  scale_fill_manual(values = ourOwnColorPalette ,name = "Hours Worked",
+                      labels = c("None","Less than 20", "20-39", "40","41-59", "60 or more")) +
+  scale_x_continuous(breaks = c(1:6),
+                     labels = c("Under 25", "25-34", "35-44","45-54","55-64","65 or over")) +
+  scale_y_continuous(limits = c(0,45000),
+                     labels = scales::comma_format()) +
+        theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_line(colour = 'white'),
+        axis.text.x = element_text(colour = 'white'),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+
+```
+</body>
+</section>
+
+<section>
+<h1 style = "font-size: 150%;">Business Acquired Over Time (Gender)</h1>
+```{r echo = FALSE}
+ggplot(LineM) +
+  geom_line(aes(ACQYR1, Male_Percentage, colour = "blue"),) +
+  geom_line(aes(LineF$ACQYR1,LineF$Female_Percentage, color = "pink")) +
+  scale_color_manual(name = "Gender",
+                    labels = c("Male", "Female"),
+                    values = c("blue", "pink")) +
+  theme(axis.line = element_line(color="black")) +
+  theme_classic() +
+   scale_y_continuous(name="Percentage",
+                      labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(name = "Year",
+                     breaks = c(1:7),
+                     labels = c("Before 1980", "1980-1989", "1990-1999","2000-2004","2005","2006","2007")) +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_line(colour = 'white'),
+        axis.text.x = element_text(colour = 'white'),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+        axis.title.y = element_text(colour = 'white')) 
+
+```
+</section>
+<section>
+<h1 style = "font-size: 150%;">Women's Business Ownership Act of 1988</h1>
+<body>
+- WBOA Act passed in 1988
+<img src="C:\Users\duran\Pictures\hr 5050.jpg" alt="SBO Owners" width="400" height="400" align="right">
+- Allowed women to obtain business loans 
+- Before the act, women were required to have a male co-signer
+- <a href="https://www.forbes.com/sites/deborahsweeney/2018/08/21/how-hr-5050-changed-entrepreneurship-for-women/#19beec1811a5">Forbes article</a>
+</body>
+</section>
+
+<section data-markdown class="center">
+<h1 style = "font-size: 150%;">Race of Business Owners</h1>
+<img src="C:\Users\duran\Pictures\Race of Business Owners Again.PNG" alt="SBO Owners" width="850" height="400" align="center">
+</section>
+
+
+<section data-markdown class="center">
+<h1 style = "font-size: 150%;">Race of Business Owners (Hispanic)</h1>
+<img src="C:\Users\duran\Pictures\Race of Business Owners hispanic again.PNG" alt="SBO Owners" width="850" height="400" align="center">
+</section>
+
+
+<section>
+<h1 style = "font-size: 150%;">Education of Business Owners (White)</h1>
+<body>
+```{r}
+ggplot(educpercent, aes(EDUC1, percent, fill = factor(EDUC1))) +
+ geom_bar(stat = "identity") +
+  labs(x="Education Level",
+      y="Percent") +
+scale_x_continuous(breaks = c(1,2,3,4,5,6,7)) +
+    geom_text(aes(label = scales::percent(percent)), vjust = -0.3, color = "white") +
+ scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  scale_fill_manual(values = ourOwnColorPalette, name="Education Level", labels= c("Less Than High School", "High School" , "Technical School", "Some College", "Associate's", "Bachelor's", "Master's +"))+
+  theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_line(colour = 'white'),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+```
+</body>
+</section>
+
+<section>
+<h1 style = "font-size: 150%;">Education of Business Owners (Hispanic)</h1>
+<body>
+
+
+```{r}
+ggplot(educhpct, aes(EDUC1,pct, fill = factor(EDUC1))) +
+ geom_bar(stat = "identity") +
+  labs(x="Education Level",
+      y="Percent") +
+scale_x_continuous(breaks = c(1,2,3,4,5,6,7)) +
+  geom_text(aes(label = scales::percent(pct)), vjust = -0.3, color = "white") +
+ theme(axis.ticks.x = element_blank(),
+       axis.text.x = element_blank()) +
+ scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+   scale_fill_manual(values = ourOwnColorPalette,name="Education Level", labels= c("Less Than High School", "High School" , "Technical School", "Some College", "Associate's", "Bachelor's", "Master's +")) +
+    theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+```
+</body>
+</section>
+<section>
+<h1 style = "font-size: 150%;">Education of Business Owners (Black)</h1>
+<body>
+```{r}
+ggplot(educbpercent, aes(EDUC1,pct, fill = factor(EDUC1))) +
+ geom_bar(stat = "identity") +
+  labs(x="Education Level",
+      y="Percent")+
+scale_x_continuous(breaks = c(1,2,3,4,5,6,7)) +
+   geom_text(aes(label = scales::percent(pct)), vjust = -0.3, color = "white") +
+ theme(axis.ticks.x = element_blank(),
+       axis.text.x = element_blank()) +
+ scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  scale_fill_manual(values = ourOwnColorPalette, name="Education Level", labels= c("Less Than High School", "High School" , "Technical School", "Some College", "Associate's", "Bachelor's", "Master's +")) +
+      theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+```
+</body>
+</section>
+<section>
+<h1 style = "font-size: 150%;">Education of Business Owners (Asian)</h1>
+<body>
+```{r}
+ggplot(educapercent, aes(EDUC1, pct, fill = factor(EDUC1))) +
+ geom_bar(stat = "identity")+
+  labs(x="Education Level",
+      y="Percent") +
+scale_x_continuous(breaks = c(1,2,3,4,5,6,7)) +
+  geom_text(aes(label = scales::percent(pct)), vjust = -0.3, color = "white") +
+ theme(axis.ticks.x = element_blank(),
+       axis.text.x = element_blank()) +
+scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+   scale_fill_manual(values = ourOwnColorPalette, name="Education Level", labels= c("Less Than High School", "High School" , "Technical School", "Some College", "Associate's", "Bachelor's", "Master's +")) +
+      theme(axis.line = element_line(color="black")) +
+   theme_classic() +
+  theme(plot.background = element_rect(fill = 'black', colour = 'black'),
+        panel.background = element_rect(fill = 'black', colour = 'black'),
+        legend.background = element_rect(fill = 'black', colour = 'black'),
+        legend.text = element_text(colour = 'white'),
+        legend.title = element_text(colour = 'white'),
+        axis.line = element_line(colour = 'white'),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = 'white'),
+        axis.title = element_text(colour = 'white'),
+        axis.title.x = element_text(colour = 'white'),
+         axis.title.y = element_text(colour = 'white'))
+```
+</body>
+</section>
+<section>
+<h1 style = "font-size: 150%;">Industry (White)</h1>
+<body>
+```{r warning = FALSE, message= FALSE}
+hctreemap2(finalDataW, group_vars  = "industryNames",  size_var = "industryCount") 
+```
+</body>
+</section>
+
+<section>
+<h1 style = "font-size: 150%;">Industry (Hispanic)</h1>
+<body>
+```{r}
+hctreemap2(finalDataH, group_vars  = "industryNames",  size_var = "industryCount") 
+```
+</body>
+</section>
+<section>
+<h1 style = "font-size: 150%;">Industry (Black)</h1>
+<body>
+```{r}
+hctreemap2(finalDataB, group_vars  = "industryNames",  size_var = "industryCount")
+```
+</body>
+</section>
+<section>
+<h1 style = "font-size: 150%;">Industry (Asian)</h1>
+<body>
+```{r}
+hctreemap2(finalDataA, group_vars  = "industryNames",  size_var = "industryCount") 
+```
+</body>
+</section>
+
+<section>
+http://127.0.0.1:6038/
+</section>
+
+<section>
+<h1 style = "font-size: 150%;">Summary</h1>
+
+- 67% Business owners 45 years or older
+- Hours Worked: 40 hours or more
+- Female owned businesses increased from 15% to 40% before 1980 through 2007
+- 40% Hispanic business owners reported high school education or less
+- 55% Asian business owners reported Bachelor’s degree or higher
+- Most prominent industries: 
+    - Professional Services 
+    - Construction
+    - Other Services
+    - Retail Trade
+
+ </section>
+ 
+ 
+<section data-background-image="C:\Users\duran\Pictures\pumpkins.gif">
+</section>
+
+
+
+
+
